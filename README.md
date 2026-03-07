@@ -2,12 +2,16 @@
 
 A parametric segmented tube for storing game mats/maps, designed for FDM printing.
 
+Current stable release: **v1.0.0**.
+
 ## Features
 
 - Automatic segmentation into printable pieces based on max part height.
 - Male/female threaded joints between parts.
 - Assembled preview mode and print-bed layout mode.
 - Insertable side label for content identification.
+- Refined insertable label with dovetail slot and debug fit preview controls.
+- Simplified Customizer: essential parameters exposed, advanced parameters hidden.
 - `threads-scad` compatibility for MakerWorld.
 
 ## Main Files
@@ -28,6 +32,10 @@ A parametric segmented tube for storing game mats/maps, designed for FDM printin
 1. Open `tubo_parametrico_mapas.scad` in OpenSCAD.
 2. Adjust parameters in the Customizer.
 3. Export STL parts with `layout_mode = "print_bed"`.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ## MakerWorld Note
 
