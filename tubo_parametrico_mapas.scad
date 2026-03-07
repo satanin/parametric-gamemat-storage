@@ -8,11 +8,6 @@ OpenSCAD notes:
 - `layout_mode = "print_bed"` arranges all parts on a centered 250x250 bed.
 - `layout_mode = "assembled"` shows the final assembled tube.
 */
-include <threads-scad/threads.scad>;
-
-// Override demo from threads.scad so cloud include does not render sample parts.
-module Demo() {}
-
 // =========================
 // User parameters
 // =========================
@@ -43,6 +38,7 @@ end_cap_thickness = 3.7;      // Closed-end thickness (mm)
 connector_outer_margin = 1.1; // Keeps thread hidden from outside silhouette (mm)
 connector_fit_bias = 0.35;    // 0=min viable (more female wall), 1=max OD fill
 end_base_bevel = 2.0;         // Tinkercad-like bevel size for end-piece bases
+equalize_visible_heights = false; // true: balanced visible heights when assembled (may increase piece_count)
 
 layout_mode = "print_bed";    // "print_bed" or "assembled"
 bed_size_x = 250;
@@ -50,14 +46,19 @@ bed_size_y = 250;
 
 label_enabled = true;          // Adds printable name tags for content identification
 label_count = 1;               // How many tags to place on the bed
-label_width = 24;              // Tangential size (mm)
+label_width = 16.8;            // Tangential size (mm), reduced ~30% to ease slot integration
 label_length = 120;            // Requested axial size (auto-clamped to safe max)
-label_thickness = 2.0;         // Flat base thickness (mm)
+label_thickness = 0.8;         // Flat base thickness (mm)
 label_concavity_depth = 1.2;   // Depth of top concavity that matches tube curvature (mm)
 label_fit_clearance = 0.25;    // Extra radius so the concavity sits without rocking (mm)
 label_insert_enabled = true;   // Adds side slot on the top female piece for insertion
 label_insert_clearance = 0.35; // Clearance between slot and tag tongue
 label_insert_end_clearance = 0.50; // Extra axial play at both tongue ends
+label_dovetail_lip = 0.90;     // Lateral undercut size for dovetail lock (mm)
+label_face_recess = 1.20;      // Side recess depth so visible label does not protrude much
+label_curved_sides = true;     // Curve label sidewalls to match tube curvature
+label_side_taper = 0.9;        // Visible side taper depth from bottom to top (mm)
+label_end_chamfer = 1.2;       // End taper on label plate for smoother side profile (mm)
 label_slot_depth = 1.2;        // Radial depth of side insertion slot (mm)
 label_slot_z_margin = 2.0;     // Axial margin from slot ends (mm)
 label_print_spacing = 8;       // Separation between tags in print layout (mm)
@@ -92,14 +93,19 @@ thread_tooth_height = min(thread_pitch * 0.90, max(thread_tooth_height_min, thre
 min_connector_wall = (connector_core_d - inner_diameter) / 2;
 
 // Recursive piece count so each physical part <= max_piece_height.
-function compute_piece_count(target_len, joint_len, max_h, n=min_pieces) =
-    ((target_len + (n - 1) * joint_len) / n <= max_h)
-    ? n
-    : compute_piece_count(target_len, joint_len, max_h, n + 1);
+function physical_piece_height(target_len, joint_len, n, eq_vis=false) =
+    eq_vis ? (target_len / n + joint_len) : ((target_len + (n - 1) * joint_len) / n);
 
-piece_count = compute_piece_count(total_length, joint_overlap_length, max_piece_height);
-piece_height = (total_length + (piece_count - 1) * joint_overlap_length) / piece_count;
-label_length_limit = min(150, piece_height);
+function compute_piece_count(target_len, joint_len, max_h, eq_vis=false, n=min_pieces) =
+    (physical_piece_height(target_len, joint_len, n, eq_vis) <= max_h)
+    ? n
+    : compute_piece_count(target_len, joint_len, max_h, eq_vis, n + 1);
+
+piece_count = compute_piece_count(total_length, joint_overlap_length, max_piece_height, equalize_visible_heights);
+segment_visible_height = total_length / piece_count;
+piece_height_male = physical_piece_height(total_length, joint_overlap_length, piece_count, equalize_visible_heights);
+piece_height_top = equalize_visible_heights ? segment_visible_height : piece_height_male;
+label_length_limit = min(150, piece_height_top);
 label_length_eff = min(label_length, label_length_limit);
 
 // =========================
@@ -124,26 +130,40 @@ assert(thread_end_relief_h >= 0 && thread_end_relief_h < male_thread_length/2, "
 assert(thread_end_relief_depth >= 0 && thread_end_relief_depth <= (thread_depth + thread_min_wall * 0.8), "thread_end_relief_depth too large for current thread wall");
 assert(thread_union_overlap >= 0 && thread_union_overlap < male_thread_length/2, "thread_union_overlap must be in [0, male_thread_length/2)");
 assert(thread_shoulder_blend_h >= 0 && thread_shoulder_blend_h < male_thread_length/2, "thread_shoulder_blend_h must be in [0, male_thread_length/2)");
-assert(piece_height <= max_piece_height + 1e-6, "Piece height exceeds max_piece_height");
+assert(piece_height_male <= max_piece_height + 1e-6, "Piece height exceeds max_piece_height");
 assert(connector_major_min_d <= connector_major_max_d + 1e-6, "Not enough wall for internal thread. Increase wall_thickness or reduce thread_depth/thread_min_wall.");
 assert(connector_major_d <= outer_diameter + 1e-6, "Thread connector exceeds outer diameter. Increase wall_thickness or reduce connector_outer_margin.");
 assert(connector_major_d > inner_diameter + 2.0, "Connector too thin. Increase wall_thickness or reduce margins.");
 assert(min_connector_wall >= thread_min_wall - 1e-6, "Connector wall too thin. Increase wall_thickness or reduce thread_depth.");
-assert(end_cap_thickness < piece_height - male_thread_length, "end_cap_thickness too large for current piece geometry.");
+assert(
+    end_cap_thickness < (equalize_visible_heights ? piece_height_top : (piece_height_male - male_thread_length)),
+    "end_cap_thickness too large for current piece geometry."
+);
 assert(label_count >= 0, "label_count must be >= 0");
 assert(label_width > 6 && label_length > 10, "label dimensions are too small.");
-assert(label_thickness > 0.8, "label_thickness should be > 0.8 mm");
-assert(label_concavity_depth > 0 && label_concavity_depth < label_thickness, "label_concavity_depth must be in (0, label_thickness)");
+assert(label_thickness >= 0.8, "label_thickness should be >= 0.8 mm");
 assert(label_fit_clearance >= 0, "label_fit_clearance must be >= 0");
 assert(label_insert_clearance >= 0, "label_insert_clearance must be >= 0");
 assert(label_insert_end_clearance >= 0, "label_insert_end_clearance must be >= 0");
+assert(label_dovetail_lip >= 0, "label_dovetail_lip must be >= 0");
+assert(label_face_recess >= 0 && label_face_recess < wall_thickness, "label_face_recess must be in [0, wall_thickness)");
+assert(label_curved_sides == true || label_curved_sides == false, "label_curved_sides must be boolean");
+assert(label_side_taper >= 0, "label_side_taper must be >= 0");
+assert(label_end_chamfer >= 0 && label_end_chamfer < label_length / 3, "label_end_chamfer out of range");
 assert(label_slot_depth > 0 && label_slot_depth < wall_thickness, "label_slot_depth must be in (0, wall_thickness)");
 assert(label_slot_z_margin >= 0, "label_slot_z_margin must be >= 0");
 
 echo("---- Tube summary ----");
 echo(str("piece_count = ", piece_count));
-echo(str("piece_height = ", piece_height));
+echo(str("piece_height_male = ", piece_height_male));
+echo(str("piece_height_top = ", piece_height_top));
 echo(str("outer_diameter = ", outer_diameter));
+
+// Keep include below the Customizer parameters so OpenSCAD can detect them.
+include <threads-scad/threads.scad>;
+
+// Override demo from threads.scad so cloud include does not render sample parts.
+module Demo() {}
 
 // =========================
 // Thread geometry helpers
@@ -369,16 +389,33 @@ module tube_piece(h, female_bottom=false, male_top=false, closed_bottom=false, c
                     d2 = connector_major_d + thread_clearance
                 );
 
-            // Optional side slot for label insertion on the top female end piece only.
+            // Optional side dovetail slot for label insertion on the top female end piece only.
             if (label_insert_enabled && closed_top) {
-                slot_w = label_width + 2 * label_insert_clearance;
-                slot_len_max = max(8, h - thread_length - 2 * label_slot_z_margin);
+                slot_face_w = label_width + 2 * label_insert_clearance;
+                slot_neck_w = max(4.0, label_width * 0.55 + 2 * label_insert_clearance);
+                slot_head_w = min(slot_face_w - 0.4, slot_neck_w + 2 * label_dovetail_lip);
+                slot_len_max = max(8, h - thread_length - label_slot_z_margin);
                 slot_len = min(label_length_eff, slot_len_max);
-                slot_z0 = thread_length + (h - thread_length - slot_len) / 2;
-                slot_x0 = outer_diameter / 2 - label_slot_depth - 0.02;
+                // Keep insertion opening at the top edge so the label can slide in.
+                slot_z0 = h - slot_len;
+                pocket_x0 = outer_diameter / 2 - label_face_recess - 0.02;
+                // Start dovetail neck right at pocket floor so the label does not "float".
+                channel_neck_x = outer_diameter / 2 - label_face_recess - 0.02;
+                channel_root_x = channel_neck_x - label_slot_depth;
 
-                translate([slot_x0, -slot_w / 2, slot_z0])
-                    cube([label_slot_depth + 0.06, slot_w, slot_len]);
+                // Shallow flat pocket to keep the visible label surface close to flush.
+                translate([pocket_x0, -slot_face_w / 2, slot_z0 - 0.01])
+                    cube([label_face_recess + 0.06, slot_face_w, slot_len + 0.02]);
+
+                // Real dovetail channel under the pocket floor.
+                translate([0, 0, slot_z0 - 0.01])
+                    linear_extrude(height = slot_len + 0.02, convexity = 8)
+                        polygon([
+                            [channel_neck_x, -slot_neck_w / 2],
+                            [channel_root_x, -slot_head_w / 2],
+                            [channel_root_x,  slot_head_w / 2],
+                            [channel_neck_x,  slot_neck_w / 2]
+                        ]);
             }
         }
 
@@ -436,44 +473,117 @@ module top_end_piece(h) {
     );
 }
 
+function arc_side_inset(z, r) =
+    (z <= 0 || r <= 0 || z >= r)
+    ? 0
+    : r - sqrt(max(0.0001, r * r - z * z));
+
+module label_plate_body(width, length, thickness, side_r, side_samples=20) {
+    if (!label_curved_sides || side_r <= 0 || side_r <= thickness) {
+        difference() {
+            cube([width, length, thickness]);
+
+            if (label_end_chamfer > 0) {
+                // Front end chamfer.
+                translate([-0.02, -0.01, thickness - label_end_chamfer])
+                    rotate([0, 90, 0])
+                        linear_extrude(height = width + 0.04)
+                            polygon([[0, 0], [label_end_chamfer + 0.02, 0], [0, label_end_chamfer + 0.02]]);
+
+                // Back end chamfer.
+                translate([-0.02, length + 0.01, thickness - label_end_chamfer])
+                    rotate([0, 90, 0])
+                        linear_extrude(height = width + 0.04)
+                            polygon([[0, 0], [0, -label_end_chamfer - 0.02], [label_end_chamfer + 0.02, 0]]);
+            }
+        }
+    } else {
+        difference() {
+            translate([0, length, 0])
+                rotate([90, 0, 0])
+                linear_extrude(height = length, convexity = 8)
+                    polygon(
+                        concat(
+                            [for (i = [0 : side_samples])
+                                let(
+                                    z = i * thickness / side_samples,
+                                    curved = arc_side_inset(z, side_r),
+                                    tapered = label_side_taper * (1 - z / max(0.001, thickness)),
+                                    inset = min(width / 2 - 0.2, max(curved, tapered))
+                                )
+                                    [inset, z]
+                            ],
+                            [for (i = [side_samples : -1 : 0])
+                                let(
+                                    z = i * thickness / side_samples,
+                                    curved = arc_side_inset(z, side_r),
+                                    tapered = label_side_taper * (1 - z / max(0.001, thickness)),
+                                    inset = min(width / 2 - 0.2, max(curved, tapered))
+                                )
+                                    [width - inset, z]
+                            ]
+                        )
+                    );
+
+            if (label_end_chamfer > 0) {
+                // Front end chamfer.
+                translate([-0.02, -0.01, thickness - label_end_chamfer])
+                    rotate([0, 90, 0])
+                        linear_extrude(height = width + 0.04)
+                            polygon([[0, 0], [label_end_chamfer + 0.02, 0], [0, label_end_chamfer + 0.02]]);
+
+                // Back end chamfer.
+                translate([-0.02, length + 0.01, thickness - label_end_chamfer])
+                    rotate([0, 90, 0])
+                        linear_extrude(height = width + 0.04)
+                            polygon([[0, 0], [0, -label_end_chamfer - 0.02], [label_end_chamfer + 0.02, 0]]);
+            }
+        }
+    }
+}
+
 // =========================
 // Label tag
 // =========================
 module content_label_tag() {
-    concave_r = outer_diameter / 2 + label_fit_clearance;
-    tongue_w = max(4, label_width - 2 * (1.2 + label_insert_clearance));
-    tongue_d = max(0.6, label_slot_depth - label_insert_clearance);
-    tongue_len = max(8, label_length_eff - 2 * label_insert_end_clearance);
+    slot_face_w = label_width + 2 * label_insert_clearance;
+    slot_neck_w = max(4.0, label_width * 0.55 + 2 * label_insert_clearance);
+    slot_head_w = min(slot_face_w - 0.4, slot_neck_w + 2 * label_dovetail_lip);
+    rail_neck_w = max(3.2, slot_neck_w - 2 * label_insert_clearance);
+    rail_head_w = max(rail_neck_w + 0.4, slot_head_w - 2 * label_insert_clearance);
+    rail_d = max(0.6, label_slot_depth - label_insert_clearance);
+    rail_len = max(8, label_length_eff - 2 * label_insert_end_clearance);
+    rail_x_neck = (label_width - rail_neck_w) / 2;
+    rail_x_head = (label_width - rail_head_w) / 2;
+    side_curve_r = outer_diameter / 2;
 
     union() {
-        difference() {
-            cube([label_width, label_length_eff, label_thickness]);
-
-            // Top concavity to match the tube outer curvature.
-            translate([label_width / 2, label_length_eff + 0.06, label_thickness + concave_r - label_concavity_depth])
-                rotate([90, 0, 0])
-                    cylinder(h = label_length_eff + 0.12, r = concave_r, $fn = max(96, ceil(concave_r * 8)));
-        }
+        // Visible face is fully flat (good for printing text/colors).
+        label_plate_body(label_width, label_length_eff, label_thickness, side_curve_r);
 
         if (label_insert_enabled)
-            translate([(label_width - tongue_w) / 2, label_insert_end_clearance, label_thickness])
-                cube([tongue_w, tongue_len, tongue_d]);
+            hull() {
+                translate([rail_x_neck, label_insert_end_clearance, label_thickness])
+                    cube([rail_neck_w, rail_len, 0.02]);
+                translate([rail_x_head, label_insert_end_clearance, label_thickness + rail_d])
+                    cube([rail_head_w, rail_len, 0.02]);
+            }
     }
 }
 
 module part_by_index(idx) {
     if (idx == 0)
-        bottom_end_piece(piece_height);
+        bottom_end_piece(piece_height_male);
     else if (idx == piece_count - 1)
-        top_end_piece(piece_height);
+        top_end_piece(piece_height_top);
     else
-        middle_piece(piece_height);
+        middle_piece(piece_height_male);
 }
 
 module part_for_print(idx) {
     // Keep blind side of both end pieces against the print bed.
     if (idx == piece_count - 1)
-        translate([0, 0, piece_height])
+        translate([0, 0, piece_height_top])
             rotate([180, 0, 0])
                 part_by_index(idx);
     else
@@ -525,7 +635,7 @@ module print_bed_layout() {
 module assembled_layout() {
     // Stack pieces and overlap each joint by effective male insertion length.
     for (i = [0 : piece_count - 1]) {
-        z = i * (piece_height - joint_overlap_length);
+        z = i * (piece_height_male - joint_overlap_length);
         translate([0, 0, z])
             part_by_index(i);
     }
