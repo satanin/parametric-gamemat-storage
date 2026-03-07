@@ -31,8 +31,6 @@ thread_length_mm = 40;        // [8:0.1:120]
 // Diametric thread clearance in millimeters.
 thread_clearance_mm = 0.60;   // [0:0.01:2]
 
-/* [Ends] */
-
 /* [Layout] */
 // Layout mode: print bed arrangement or assembled preview.
 layout_mode = "print_bed";    // [print_bed, assembled]
@@ -69,7 +67,7 @@ label_debug_offset_y_mm = 0.0; // [-50:0.05:50]
 // Additional debug preview Z offset in millimeters (applied over auto alignment).
 label_debug_offset_z_mm = 0.0; // [-50:0.05:50]
 // Additional debug preview rotation in degrees (applied over auto alignment).
-label_debug_rotate_deg = -90.0; // [-180:0.1:180]
+label_debug_rotate_deg = 0.0; // [-180:0.1:180]
 
 /* [Pattern] */
 // Enable exterior surface pattern.
