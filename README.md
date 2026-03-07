@@ -1,33 +1,40 @@
 # Parametric Map Storage Tube (OpenSCAD)
 
-Modelo paramétrico de tubo segmentado para almacenar mapas/lonas, preparado para impresión FDM.
+A parametric segmented tube for storing game mats/maps, designed for FDM printing.
 
-## Características
+## Features
 
-- Segmentación automática en piezas según altura máxima de impresión.
-- Uniones roscadas macho/hembra entre piezas.
-- Modo de vista ensamblada y modo distribución en cama.
-- Etiqueta lateral insertable para identificar contenido.
-- Compatibilidad con `threads-scad` para MakerWorld.
+- Automatic segmentation into printable pieces based on max part height.
+- Male/female threaded joints between parts.
+- Assembled preview mode and print-bed layout mode.
+- Insertable side label for content identification.
+- `threads-scad` compatibility for MakerWorld.
 
-## Archivos principales
+## Main Files
 
-- `tubo_parametrico_mapas.scad`: modelo principal.
-- `threads-scad/threads.scad`: librería de roscas usada por el modelo.
-- `tubo_parametrico_mapas.json`: preset de parámetros para Customizer.
+- `tubo_parametrico_mapas.scad`: main model.
+- `threads-scad/threads.scad`: thread library used by the model.
+- `tubo_parametrico_mapas.json`: Customizer parameter preset.
 
-## Uso rápido
+## Dependency Policy
 
-1. Abrir `tubo_parametrico_mapas.scad` en OpenSCAD.
-2. Ajustar parámetros en Customizer.
-3. Exportar STL de las piezas en `layout_mode = "print_bed"`.
+- The project vendors one local copy of `threads-scad` at `threads-scad/threads.scad`.
+- Do not add a second `threads.scad` copy at repository root.
+- Upstream source: <https://www.thingiverse.com/thing:1686322>
+- License: CC0 1.0 Public Domain (as declared in the library header).
 
-## Nota MakerWorld
+## Quick Start
 
-El archivo principal incluye:
+1. Open `tubo_parametrico_mapas.scad` in OpenSCAD.
+2. Adjust parameters in the Customizer.
+3. Export STL parts with `layout_mode = "print_bed"`.
+
+## MakerWorld Note
+
+The main file includes:
 
 ```scad
 include <threads-scad/threads.scad>;
 ```
 
-y redefine `Demo()` para evitar que aparezcan piezas de demostración de la librería en el render.
+and overrides `Demo()` to prevent the library's demo parts from appearing in the render.
