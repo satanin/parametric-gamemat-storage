@@ -51,7 +51,15 @@ label_thickness_mm = 0.8;     // [0.8:0.05:2]
 // Side rail bite per side in millimeters.
 label_rail_bite_mm = 1.0;     // [0.5:0.05:2]
 // Dovetail insert clearance in millimeters.
-label_insert_clearance_mm = 0.1; // [0:0.01:0.1]
+label_insert_clearance_mm = 0.25; // [0:0.01:0.4]
+// Snap protrusion height in millimeters.
+label_snap_height_mm = 0.4;   // [0.05:0.01:1.0]
+// Snap protrusion axial length in millimeters.
+label_snap_length_mm = 1.2;   // [0.4:0.05:3.0]
+// Distance from insertion edge to snap protrusion in millimeters.
+label_snap_offset_mm = 1.0;   // [0.2:0.05:5.0]
+// Snap protrusion width factor over label width.
+label_snap_width_factor = 0.7; // [0.3:0.05:1.0]
 // End clearance for dovetail insertion in millimeters.
 label_insert_end_clearance_mm = 0.50; // [0:0.01:5]
 // Depth of the visible label face recess in millimeters.
@@ -180,6 +188,9 @@ label_length = label_length_mm;
 label_thickness = label_thickness_mm;
 label_rail_bite = label_rail_bite_mm;
 label_insert_clearance = label_insert_clearance_mm;
+label_snap_height = label_snap_height_mm;
+label_snap_length = label_snap_length_mm;
+label_snap_offset = label_snap_offset_mm;
 label_insert_end_clearance = label_insert_end_clearance_mm;
 label_face_recess = label_face_recess_mm;
 label_slot_depth = label_slot_depth_mm;
@@ -268,6 +279,10 @@ assert(label_width > 6 && label_length > 10, "label dimensions are too small.");
 assert(label_thickness >= 0.8, "label_thickness should be >= 0.8 mm");
 assert(label_rail_bite > 0 && label_rail_bite < label_width / 2, "label_rail_bite must be in (0, label_width/2)");
 assert(label_insert_clearance >= 0, "label_insert_clearance must be >= 0");
+assert(label_snap_height > 0, "label_snap_height must be > 0");
+assert(label_snap_length > 0, "label_snap_length must be > 0");
+assert(label_snap_offset >= 0, "label_snap_offset must be >= 0");
+assert(label_snap_width_factor > 0 && label_snap_width_factor <= 1, "label_snap_width_factor must be in (0,1]");
 assert(label_insert_end_clearance >= 0, "label_insert_end_clearance must be >= 0");
 assert(label_dovetail_lip >= 0, "label_dovetail_lip must be >= 0");
 assert(label_face_recess >= 0 && label_face_recess < wall_thickness, "label_face_recess must be in [0, wall_thickness)");
@@ -548,6 +563,11 @@ module tube_piece(h, female_bottom=false, male_top=false, closed_bottom=false, c
                 slot_face_x0 = outer_diameter / 2 - slot_depth_face - 0.02;
                 slot_entry_x0 = outer_diameter / 2 - slot_depth_entry - 0.02;
                 slot_channel_x0 = outer_diameter / 2 - slot_depth_channel - 0.02;
+                snap_w = max(2.0, min(slot_inner_w - 0.4, label_width * label_snap_width_factor));
+                snap_z2 = slot_z0 + slot_len - label_snap_offset;
+                snap_z1 = max(slot_z0 + 0.4, snap_z2 - label_snap_length);
+                snap_depth = label_snap_height + label_insert_clearance;
+                snap_wall_x = slot_channel_x0;
 
                 // Inner channel (full width): where the flat label slides.
                 translate([slot_channel_x0, -slot_inner_w / 2, slot_z0 - 0.01])
@@ -560,6 +580,16 @@ module tube_piece(h, female_bottom=false, male_top=false, closed_bottom=false, c
                 // Bottom mouth (user bottom = model higher Z): full width so insertion is possible.
                 translate([slot_entry_x0, -slot_entry_open_w / 2, slot_z0 + slot_len - slot_entry_h - 0.01])
                     cube([slot_depth_entry + 0.06, slot_entry_open_w, slot_entry_h + 0.02]);
+
+                // Single snap pocket on channel floor (entry side): ramp + short stop face.
+                hull() {
+                    translate([snap_wall_x - 0.02, -snap_w / 2, snap_z1])
+                        cube([0.03, snap_w, 0.02]);
+                    translate([snap_wall_x - snap_depth - 0.02, -snap_w / 2, snap_z2 - 0.02])
+                        cube([snap_depth + 0.04, snap_w, 0.02]);
+                }
+                translate([snap_wall_x - snap_depth - 0.02, -snap_w / 2, snap_z2 - 0.22])
+                    cube([snap_depth + 0.04, snap_w, 0.24]);
             }
         }
 
@@ -692,8 +722,23 @@ module label_plate_body(width, length, thickness, side_r, side_samples=20) {
 module content_label_tag() {
     plate_len = label_tag_length_eff;
     side_curve_r = outer_diameter / 2;
-    // Flat label plate: no dovetail, retained by side rails in female slot.
-    label_plate_body(label_width, plate_len, label_thickness, side_curve_r);
+    snap_w = max(2.0, min(label_width - 0.4, label_width * label_snap_width_factor));
+    snap_x0 = (label_width - snap_w) / 2;
+    snap_y2 = plate_len - label_snap_offset;
+    snap_y1 = max(0.4, snap_y2 - label_snap_length);
+
+    union() {
+        // Flat label plate retained by side rails in female slot.
+        label_plate_body(label_width, plate_len, label_thickness, side_curve_r);
+
+        // Single triangular snap protrusion near insertion edge.
+        hull() {
+            translate([snap_x0, snap_y1, label_thickness])
+                cube([snap_w, 0.02, 0.02]);
+            translate([snap_x0, snap_y2 - 0.02, label_thickness])
+                cube([snap_w, 0.02, label_snap_height]);
+        }
+    }
 }
 
 module part_by_index(idx) {
@@ -719,7 +764,7 @@ module label_fit_preview_local(h_local) {
     slot_min_z = label_slot_excluded_bottom + label_slot_z_margin + label_bottom_keepout;
     slot_len = min(label_length_eff, max(8, h_local - slot_min_z));
     slot_z0 = h_local - slot_len;
-    radial_extent = label_thickness;
+    radial_extent = label_thickness + label_snap_height;
     // Auto-align debug label from current geometry so it tracks diameter/label changes.
     dbg_auto_offset_x = -0.6 * label_width;
     dbg_auto_offset_y = -label_insert_clearance;
