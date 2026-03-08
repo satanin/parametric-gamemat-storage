@@ -16,7 +16,7 @@ Current stable release: **v1.0.0**.
 
 ## Main Files
 
-- `tubo_parametrico_mapas.scad`: main model.
+- `parametric_gamemat_storage.scad`: main model.
 - `threads-scad/threads.scad`: thread library used by the model.
 - `tubo_parametrico_mapas.json`: Customizer parameter preset.
 
@@ -29,7 +29,7 @@ Current stable release: **v1.0.0**.
 
 ## Quick Start
 
-1. Open `tubo_parametrico_mapas.scad` in OpenSCAD.
+1. Open `parametric_gamemat_storage.scad` in OpenSCAD.
 2. Adjust parameters in the Customizer.
 3. Export STL parts with `layout_mode = "print_bed"`.
 

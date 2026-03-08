@@ -43,7 +43,7 @@ bed_size_y_mm = 250;          // [120:1:500]
 // Enable separate printable name labels.
 label_enabled = true;
 // Label width (tangential) in millimeters.
-label_width_mm = 12;          // [8:0.05:80]
+label_width_mm = 12;          // [8:0.05:18]
 // Label requested length (axial) in millimeters.
 label_length_mm = 120;        // [8:0.1:300]
 // Label plate thickness in millimeters.
