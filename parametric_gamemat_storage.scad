@@ -15,9 +15,9 @@ OpenSCAD notes:
 // Final assembled internal usable length in millimeters.
 total_length_mm = 430;        // [100:0.5:1200]
 // Internal usable diameter in millimeters.
-inner_diameter_mm = 65;       // [20:0.1:200]
+inner_diameter_mm = 65;       // [20:0.5:200]
 // Wall thickness in millimeters.
-wall_thickness_mm = 4.0;      // [2:0.05:20]
+wall_thickness_mm = 4.0;      // [2:0.5:20]
 
 /* [Segmentation] */
 // Maximum printable height per piece in millimeters.
@@ -27,71 +27,71 @@ min_pieces = 2;               // [2:1:12]
 
 /* [Thread] */
 // Female thread engagement length in millimeters.
-thread_length_mm = 40;        // [20:0.1:50]
+thread_length_mm = 40;        // [20:0.5:50]
 // Diametric thread clearance in millimeters.
-thread_clearance_mm = 0.60;   // [0:0.01:2]
+thread_clearance_mm = 0.60;   // [0:0.1:2]
 
 /* [Layout] */
 // Layout mode: print bed arrangement or assembled preview.
 layout_mode = "print_bed";    // [print_bed, assembled]
 // Print bed X size in millimeters.
-bed_size_x_mm = 250;          // [120:1:500]
+bed_size_x_mm = 250;          // [120:0.5:500]
 // Print bed Y size in millimeters.
-bed_size_y_mm = 250;          // [120:1:500]
+bed_size_y_mm = 250;          // [120:0.5:500]
 
 /* [Label] */
 // Enable separate printable name labels.
 label_enabled = true;
 // Label width (tangential) in millimeters.
-label_width_mm = 12;          // [8:0.05:18]
+label_width_mm = 12;          // [10:0.5:18]
 // Label requested length (axial) in millimeters.
-label_length_mm = 120;        // [8:0.1:300]
+label_length_mm = 120;        // [8:0.5:300]
 // Label plate thickness in millimeters.
-label_thickness_mm = 0.8;     // [0.8:0.05:2]
+label_thickness_mm = 0.8;     // [0.8:0.1:2]
 // Side rail bite per side in millimeters.
-label_rail_bite_mm = 1.0;     // [0.5:0.05:2]
-// Dovetail insert clearance in millimeters.
-label_insert_clearance_mm = 0.25; // [0:0.01:0.4]
+label_rail_bite_mm = 1.0;     // [0.5:0.1:2]
+// Label insert clearance in millimeters.
+label_insert_clearance_mm = 0.25; // [0:0.05:0.5]
 // Snap protrusion height in millimeters.
-label_snap_height_mm = 0.4;   // [0.05:0.01:1.0]
+label_snap_height_mm = 0.4;   // [0.05:0.05:1.0]
 // Snap protrusion axial length in millimeters.
-label_snap_length_mm = 1.2;   // [0.4:0.05:3.0]
+label_snap_length_mm = 1.2;   // [0.4:0.5:3.0]
 // Distance from insertion edge to snap protrusion in millimeters.
-label_snap_offset_mm = 1.0;   // [0.2:0.05:5.0]
+label_snap_offset_mm = 1.0;   // [0.2:0.5:5.0]
 // Snap protrusion width factor over label width.
 label_snap_width_factor = 0.7; // [0.3:0.05:1.0]
-// End clearance for dovetail insertion in millimeters.
-label_insert_end_clearance_mm = 0.50; // [0:0.01:5]
+// End clearance for label insertion in millimeters.
+label_insert_end_clearance_mm = 0.50; // [0:0.5:5]
 // Depth of the visible label face recess in millimeters.
-label_face_recess_mm = 1.20;  // [0:0.01:10]
+label_face_recess_mm = 1.20;  // [0:0.5:10]
 
 /* [Debug] */
 // Show debug label preview next to top female slot.
 label_debug_fit_preview = false;
 // Base radial offset for debug preview in millimeters.
-label_debug_gap_mm = 0.0;     // [-20:0.05:20]
+label_debug_gap_mm = 0.0;     // [-20:0.5:20]
 // Additional debug preview X offset in millimeters (applied over auto alignment).
 label_debug_offset_x_mm = 0.0;
 // Additional debug preview Y offset in millimeters (applied over auto alignment).
-label_debug_offset_y_mm = 0.0; // [-50:0.05:50]
+label_debug_offset_y_mm = 0.0; // [-50:0.5:50]
 // Additional debug preview Z offset in millimeters (applied over auto alignment).
-label_debug_offset_z_mm = 0.0; // [-50:0.05:50]
+label_debug_offset_z_mm = 0.0; // [-50:0.5:50]
 // Additional debug preview rotation in degrees (applied over auto alignment).
-label_debug_rotate_deg = 0.0; // [-180:0.1:180]
+label_debug_rotate_deg = 0.0; // [-180:0.5:180]
 
 /* [Pattern] */
 // Enable exterior surface pattern.
 surface_pattern = false;
 // Pattern groove depth in millimeters.
-pattern_depth_mm = 0.20;      // [0.01:0.01:0.8]
+pattern_depth_mm = 0.20;      // [0.01:0.05:0.8]
 // Number of pattern lanes per family.
 pattern_lanes = 10;           // [2:1:40]
 // Pattern angle in degrees.
-pattern_angle = 45;           // [10:1:75]
+pattern_angle = 45;           // [10:0.5:75]
 // Pattern twist gain factor.
-pattern_twist_gain = 1.0;     // [0.5:0.05:3]
+pattern_twist_gain = 1.0;     // [0.5:0.5:3]
 // Pattern line width in millimeters.
-pattern_line_width = 1.15;    // [0.2:0.01:3]
+pattern_line_width = 1.15;    // [0.2:0.5:3]
 
 /* [Hidden] */
 // Thread entry taper in millimeters.
@@ -130,18 +130,12 @@ connector_outer_margin = 1.1; // Keeps thread hidden from outside silhouette (mm
 connector_fit_bias = 0.35;    // 0=min viable (more female wall), 1=max OD fill
 // Equalize visible heights when assembled.
 equalize_visible_heights = false; // true: balanced visible heights when assembled (may increase piece_count)
-// Dovetail lip size in millimeters.
-label_dovetail_lip = 0.90;    // Lateral undercut size for dovetail lock (mm)
 // Side taper depth in millimeters.
 label_side_taper = 0.9;       // Visible side taper depth from bottom to top (mm)
 // Label end chamfer in millimeters.
 label_end_chamfer = 1.2;      // End taper on label plate for smoother side profile (mm)
-// Slot radial depth in millimeters (kept tied to label thickness).
-label_slot_depth_mm = label_thickness_mm;
 // Extra trim for label plate lower side in millimeters (kept tied to base bevel).
 label_part_bottom_trim_mm = end_base_bevel_mm;
-// Extra trim for dovetail lower side in millimeters (kept tied to base bevel).
-label_dovetail_bottom_trim_mm = end_base_bevel_mm;
 // Extra keepout above lower relief area in millimeters (kept tied to base bevel).
 label_bottom_keepout_mm = end_base_bevel_mm;
 // Margin from slot ends in millimeters.
@@ -155,7 +149,7 @@ label_curved_sides = false;
 // Auto-disable thread-zone restriction if wall is thick enough.
 label_auto_thread_override = true;
 // Minimum wall thickness to allow auto thread-zone override in millimeters.
-label_override_min_wall_thickness_mm = 6.0;
+label_override_min_wall_thickness_mm = 5.5;
 // Spacing between labels on print bed in millimeters (currently irrelevant with single label).
 label_print_spacing_mm = 8;
 // Pattern bottom margin baseline in millimeters (derived per-piece from bevel).
@@ -193,12 +187,10 @@ label_snap_length = label_snap_length_mm;
 label_snap_offset = label_snap_offset_mm;
 label_insert_end_clearance = label_insert_end_clearance_mm;
 label_face_recess = label_face_recess_mm;
-label_slot_depth = label_slot_depth_mm;
 label_override_min_wall_thickness = label_override_min_wall_thickness_mm;
 label_slot_z_margin = label_slot_z_margin_mm;
 label_bottom_keepout = label_bottom_keepout_mm;
 label_part_bottom_trim = label_part_bottom_trim_mm;
-label_dovetail_bottom_trim = label_dovetail_bottom_trim_mm;
 label_print_spacing = label_print_spacing_mm;
 label_debug_gap = label_debug_gap_mm;
 label_debug_offset_x = label_debug_offset_x_mm;
@@ -275,7 +267,7 @@ assert(
     "end_cap_thickness too large for current piece geometry."
 );
 assert(label_count >= 0, "label_count must be >= 0");
-assert(label_width > 6 && label_length > 10, "label dimensions are too small.");
+assert(label_width >= 10 && label_length > 10, "label dimensions are too small.");
 assert(label_thickness >= 0.8, "label_thickness should be >= 0.8 mm");
 assert(label_rail_bite > 0 && label_rail_bite < label_width / 2, "label_rail_bite must be in (0, label_width/2)");
 assert(label_insert_clearance >= 0, "label_insert_clearance must be >= 0");
@@ -284,18 +276,15 @@ assert(label_snap_length > 0, "label_snap_length must be > 0");
 assert(label_snap_offset >= 0, "label_snap_offset must be >= 0");
 assert(label_snap_width_factor > 0 && label_snap_width_factor <= 1, "label_snap_width_factor must be in (0,1]");
 assert(label_insert_end_clearance >= 0, "label_insert_end_clearance must be >= 0");
-assert(label_dovetail_lip >= 0, "label_dovetail_lip must be >= 0");
 assert(label_face_recess >= 0 && label_face_recess < wall_thickness, "label_face_recess must be in [0, wall_thickness)");
 assert(label_curved_sides == true || label_curved_sides == false, "label_curved_sides must be boolean");
 assert(label_side_taper >= 0, "label_side_taper must be >= 0");
 assert(label_end_chamfer >= 0 && label_end_chamfer < label_length / 3, "label_end_chamfer out of range");
-assert(label_slot_depth > 0 && label_slot_depth < wall_thickness, "label_slot_depth must be in (0, wall_thickness)");
 assert(label_auto_thread_override == true || label_auto_thread_override == false, "label_auto_thread_override must be boolean");
 assert(label_override_min_wall_thickness >= 0, "label_override_min_wall_thickness must be >= 0");
 assert(label_slot_z_margin >= 0, "label_slot_z_margin must be >= 0");
 assert(label_bottom_keepout >= 0, "label_bottom_keepout must be >= 0");
 assert(label_part_bottom_trim >= 0, "label_part_bottom_trim must be >= 0");
-assert(label_dovetail_bottom_trim >= 0, "label_dovetail_bottom_trim must be >= 0");
 assert(label_length_limit > 8, "No room for label slot with current thread/margin constraints.");
 assert(label_tag_length_eff > 0, "Computed label_tag_length_eff must be > 0");
 assert(label_debug_fit_preview == true || label_debug_fit_preview == false, "label_debug_fit_preview must be boolean");

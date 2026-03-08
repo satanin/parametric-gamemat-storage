@@ -2,7 +2,7 @@
 
 A parametric segmented tube for storing game mats/maps, designed for FDM printing.
 
-Current stable release: **v1.0.0**.
+Current stable release: **v1.1.0**.
 
 ## Features
 
@@ -10,7 +10,9 @@ Current stable release: **v1.0.0**.
 - Male/female threaded joints between parts.
 - Assembled preview mode and print-bed layout mode.
 - Insertable side label for content identification.
-- Refined insertable label with dovetail slot and debug fit preview controls.
+- Flat insertable label retained by side rails (no dovetail tongue).
+- Single snap-lock feature (triangular bump + matching pocket) to prevent labels from sliding out.
+- Debug fit preview controls for fast visual validation.
 - Simplified Customizer: essential parameters exposed, advanced parameters hidden.
 - `threads-scad` compatibility for MakerWorld.
 
