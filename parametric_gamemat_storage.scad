@@ -533,7 +533,7 @@ module tube_piece(h, female_bottom=false, male_top=false, closed_bottom=false, c
                 );
 
             // Optional side slot with two lateral rails for label insertion on the top female end piece only.
-            if (label_insert_enabled && closed_top) {
+            if (label_enabled && label_insert_enabled && closed_top) {
                 slot_inner_w = label_width + 2 * label_insert_clearance;
                 slot_lip_bite = max(0.2, label_rail_bite);
                 slot_open_w = max(0.6, slot_inner_w - 2 * slot_lip_bite);
