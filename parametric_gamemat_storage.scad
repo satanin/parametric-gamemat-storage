@@ -27,7 +27,7 @@ min_pieces = 2;               // [2:1:12]
 
 /* [Thread] */
 // Female thread engagement length in millimeters.
-thread_length_mm = 40;        // [8:0.1:120]
+thread_length_mm = 40;        // [20:0.1:50]
 // Diametric thread clearance in millimeters.
 thread_clearance_mm = 0.60;   // [0:0.01:2]
 
@@ -47,9 +47,9 @@ label_width_mm = 12;          // [8:0.05:18]
 // Label requested length (axial) in millimeters.
 label_length_mm = 120;        // [8:0.1:300]
 // Label plate thickness in millimeters.
-label_thickness_mm = 0.8;     // [0.4:0.05:5]
+label_thickness_mm = 0.8;     // [0.8:0.05:2]
 // Dovetail insert clearance in millimeters.
-label_insert_clearance_mm = 0.35; // [0:0.01:2]
+label_insert_clearance_mm = 0.1; // [0:0.01:0.1]
 // End clearance for dovetail insertion in millimeters.
 label_insert_end_clearance_mm = 0.50; // [0:0.01:5]
 // Depth of the visible label face recess in millimeters.
@@ -262,7 +262,7 @@ assert(
 );
 assert(label_count >= 0, "label_count must be >= 0");
 assert(label_width > 6 && label_length > 10, "label dimensions are too small.");
-assert(label_thickness >= 0.4, "label_thickness should be >= 0.4 mm");
+assert(label_thickness >= 0.8, "label_thickness should be >= 0.8 mm");
 assert(label_insert_clearance >= 0, "label_insert_clearance must be >= 0");
 assert(label_insert_end_clearance >= 0, "label_insert_end_clearance must be >= 0");
 assert(label_dovetail_lip >= 0, "label_dovetail_lip must be >= 0");
