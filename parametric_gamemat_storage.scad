@@ -48,6 +48,8 @@ label_width_mm = 12;          // [8:0.05:18]
 label_length_mm = 120;        // [8:0.1:300]
 // Label plate thickness in millimeters.
 label_thickness_mm = 0.8;     // [0.8:0.05:2]
+// Side rail bite per side in millimeters.
+label_rail_bite_mm = 1.0;     // [0.5:0.05:2]
 // Dovetail insert clearance in millimeters.
 label_insert_clearance_mm = 0.1; // [0:0.01:0.1]
 // End clearance for dovetail insertion in millimeters.
@@ -176,6 +178,7 @@ bed_size_y = bed_size_y_mm;
 label_width = label_width_mm;
 label_length = label_length_mm;
 label_thickness = label_thickness_mm;
+label_rail_bite = label_rail_bite_mm;
 label_insert_clearance = label_insert_clearance_mm;
 label_insert_end_clearance = label_insert_end_clearance_mm;
 label_face_recess = label_face_recess_mm;
@@ -263,6 +266,7 @@ assert(
 assert(label_count >= 0, "label_count must be >= 0");
 assert(label_width > 6 && label_length > 10, "label dimensions are too small.");
 assert(label_thickness >= 0.8, "label_thickness should be >= 0.8 mm");
+assert(label_rail_bite > 0 && label_rail_bite < label_width / 2, "label_rail_bite must be in (0, label_width/2)");
 assert(label_insert_clearance >= 0, "label_insert_clearance must be >= 0");
 assert(label_insert_end_clearance >= 0, "label_insert_end_clearance must be >= 0");
 assert(label_dovetail_lip >= 0, "label_dovetail_lip must be >= 0");
@@ -524,34 +528,38 @@ module tube_piece(h, female_bottom=false, male_top=false, closed_bottom=false, c
                     d2 = connector_major_d + thread_clearance
                 );
 
-            // Optional side dovetail slot for label insertion on the top female end piece only.
+            // Optional side slot with two lateral rails for label insertion on the top female end piece only.
             if (label_insert_enabled && closed_top) {
-                slot_face_w = label_width + 2 * label_insert_clearance;
-                slot_neck_w = max(4.0, label_width * 0.55 + 2 * label_insert_clearance);
-                slot_head_w = min(slot_face_w - 0.4, slot_neck_w + 2 * label_dovetail_lip);
+                slot_inner_w = label_width + 2 * label_insert_clearance;
+                slot_lip_bite = max(0.2, label_rail_bite);
+                slot_open_w = max(0.6, slot_inner_w - 2 * slot_lip_bite);
                 slot_min_z = label_slot_excluded_bottom + label_slot_z_margin + label_bottom_keepout;
                 slot_len_max = max(8, h - slot_min_z);
                 slot_len = min(label_length_eff, slot_len_max);
-                // Keep insertion opening at the top edge so the label can slide in.
+                // Keep insertion opening on user "bottom" (model higher Z), with top stop on lower Z side.
                 slot_z0 = h - slot_len;
-                pocket_x0 = outer_diameter / 2 - label_face_recess - 0.02;
-                // Start dovetail neck right at pocket floor so the label does not "float".
-                channel_neck_x = outer_diameter / 2 - label_face_recess - 0.02;
-                channel_root_x = channel_neck_x - label_slot_depth;
+                slot_entry_h = max(0.8, label_insert_end_clearance + 0.6);
+                // Visible rail depth on the outer face (larger than skin so rails are clearly present).
+                slot_depth_face = max(0.45, min(1.2, label_face_recess));
+                slot_depth_entry = max(0.25, label_face_recess);
+                slot_depth_channel = slot_depth_face + label_thickness + label_insert_clearance;
+                slot_depth_inner_only = max(0.2, slot_depth_channel - slot_depth_face);
+                slot_entry_open_w = slot_inner_w;
+                slot_face_x0 = outer_diameter / 2 - slot_depth_face - 0.02;
+                slot_entry_x0 = outer_diameter / 2 - slot_depth_entry - 0.02;
+                slot_channel_x0 = outer_diameter / 2 - slot_depth_channel - 0.02;
 
-                // Shallow flat pocket to keep the visible label surface close to flush.
-                translate([pocket_x0, -slot_face_w / 2, slot_z0 - 0.01])
-                    cube([label_face_recess + 0.06, slot_face_w, slot_len + 0.02]);
+                // Inner channel (full width): where the flat label slides.
+                translate([slot_channel_x0, -slot_inner_w / 2, slot_z0 - 0.01])
+                    cube([slot_depth_inner_only + 0.08, slot_inner_w, slot_len + 0.02]);
 
-                // Real dovetail channel under the pocket floor.
-                translate([0, 0, slot_z0 - 0.01])
-                    linear_extrude(height = slot_len + 0.02, convexity = 8)
-                        polygon([
-                            [channel_neck_x, -slot_neck_w / 2],
-                            [channel_root_x, -slot_head_w / 2],
-                            [channel_root_x,  slot_head_w / 2],
-                            [channel_neck_x,  slot_neck_w / 2]
-                        ]);
+                // Outer narrow opening: leaves two side rails (lips) that hold label by its sides.
+                translate([slot_face_x0, -slot_open_w / 2, slot_z0 - 0.01])
+                    cube([slot_depth_face + 0.06, slot_open_w, max(0.02, slot_len - slot_entry_h + 0.03)]);
+
+                // Bottom mouth (user bottom = model higher Z): full width so insertion is possible.
+                translate([slot_entry_x0, -slot_entry_open_w / 2, slot_z0 + slot_len - slot_entry_h - 0.01])
+                    cube([slot_depth_entry + 0.06, slot_entry_open_w, slot_entry_h + 0.02]);
             }
         }
 
@@ -682,59 +690,10 @@ module label_plate_body(width, length, thickness, side_r, side_samples=20) {
 // Label tag
 // =========================
 module content_label_tag() {
-    slot_face_w = label_width + 2 * label_insert_clearance;
-    slot_neck_w = max(4.0, label_width * 0.55 + 2 * label_insert_clearance);
-    slot_head_w = min(slot_face_w - 0.4, slot_neck_w + 2 * label_dovetail_lip);
-    rail_neck_w = max(3.2, slot_neck_w - 2 * label_insert_clearance);
-    rail_head_w = max(rail_neck_w + 0.4, slot_head_w - 2 * label_insert_clearance);
-    rail_d = max(0.6, label_slot_depth - label_insert_clearance);
-    // Lower end (insertion-start side) begins at the label edge.
-    rail_start = 0;
-    rail_end_clear = label_insert_end_clearance;
-    rail_len = max(0.8, label_slot_length_eff - rail_end_clear);
-    // Trim run for dovetail relief (allow full user control over visible ramp length).
-    rail_trim = min(label_dovetail_bottom_trim, max(0, rail_len - 0.8));
-    // Keep full profile from the lower edge and trim at the opposite end.
-    rail_main_start = rail_start;
-    rail_main_len = max(0.6, rail_len - rail_trim);
-    rail_ramp_start = rail_start + rail_main_len;
-    // Exact plate rule: negative slot length minus female bevel/chamfer distance.
     plate_len = label_tag_length_eff;
-    rail_x_neck = (label_width - rail_neck_w) / 2;
-    rail_x_head = (label_width - rail_head_w) / 2;
     side_curve_r = outer_diameter / 2;
-
-    union() {
-        // Visible face is fully flat (good for printing text/colors).
-        label_plate_body(label_width, plate_len, label_thickness, side_curve_r);
-
-        if (label_insert_enabled)
-            union() {
-                // Main dovetail tongue keeps full usable length.
-                hull() {
-                    translate([rail_x_neck, rail_main_start, label_thickness])
-                        cube([rail_neck_w, rail_main_len, 0.02]);
-                    translate([rail_x_head, rail_main_start, label_thickness + rail_d])
-                        cube([rail_head_w, rail_main_len, 0.02]);
-                }
-
-                // Ramp on trimmed side, keeping a clean 45 deg-like relief.
-                if (rail_trim > 0.05)
-                    hull() {
-                        // Full profile at ramp start.
-                        translate([rail_x_neck, rail_ramp_start, label_thickness])
-                            cube([rail_neck_w, 0.02, 0.02]);
-                        translate([rail_x_head, rail_ramp_start, label_thickness + rail_d])
-                            cube([rail_head_w, 0.02, 0.02]);
-
-                        // Tiny section at trimmed tip on the rail outer face (not label-contact face).
-                        translate([rail_x_neck + rail_neck_w * 0.25, rail_start + rail_len, label_thickness + rail_d - 0.02])
-                            cube([rail_neck_w * 0.5, 0.02, 0.02]);
-                        translate([rail_x_head + rail_head_w * 0.25, rail_start + rail_len, label_thickness + rail_d - 0.02])
-                            cube([rail_head_w * 0.5, 0.02, 0.02]);
-                    }
-            }
-    }
+    // Flat label plate: no dovetail, retained by side rails in female slot.
+    label_plate_body(label_width, plate_len, label_thickness, side_curve_r);
 }
 
 module part_by_index(idx) {
@@ -758,13 +717,12 @@ module part_for_print(idx) {
 
 module label_fit_preview_local(h_local) {
     slot_min_z = label_slot_excluded_bottom + label_slot_z_margin + label_bottom_keepout;
-    slot_len = min(label_length_eff, max(8, piece_height_top - slot_min_z));
+    slot_len = min(label_length_eff, max(8, h_local - slot_min_z));
     slot_z0 = h_local - slot_len;
-    rail_d = max(0.6, label_slot_depth - label_insert_clearance);
-    radial_extent = label_thickness + rail_d;
+    radial_extent = label_thickness;
     // Auto-align debug label from current geometry so it tracks diameter/label changes.
     dbg_auto_offset_x = -0.6 * label_width;
-    dbg_auto_offset_y = -label_dovetail_lip;
+    dbg_auto_offset_y = -label_insert_clearance;
     dbg_auto_offset_z = 0;
     dbg_auto_rotate_deg = -90;
     x_pos = outer_diameter / 2 + label_debug_gap + dbg_auto_offset_x + label_debug_offset_x;
